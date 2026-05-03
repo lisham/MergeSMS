@@ -1,0 +1,37 @@
+# ========================
+# User Specific Exclusions
+# ========================
+# Files
+lists.ods
+temp.html
+temp.js
+temp.py
+راهنما.txt
+
+# Directories
+projects-test/
+آرشیو/
+عکس‌ها/
+
+# ========================
+# Python & Environment
+# ========================
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.env
+
+# ========================
+# LibreOffice / OS Locks
+# ========================
+# Ignore LibreOffice temporary lock files for CSVs
+.~lock.*#
+*.swp
+
+# IDEs
+.vscode/
+.idea/
+

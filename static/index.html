@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+	<title></title>
+
+	<link rel="stylesheet" href="css/materialdesignicons.min.css" />
+	<link rel="stylesheet" href="css/vuetify.min.css" type="text/css" media="screen,projection" />
+	<link rel="stylesheet" href="css/styles-fa.css" type="text/css">
+
+	<!-- <style></style> -->
+</head>
+
+<body>
+	<div id="app">
+		<v-app>
+
+			<!-- Use v-app-bar with 'app' prop to stick it to the top -->
+			<v-app-bar
+				app
+				color="deep-orange-darken-4"
+				density="compact"
+			>
+				<!-- Application Title -->
+				<v-app-bar-title>
+					<!-- Wrapper for proper vertical alignment -->
+					<div class="d-flex align-center">
+						<img src="assets/logo-white.svg" class="mr-4" height="24" alt="Logo">
+						<span class="text-h6 font-weight-bold">MergeSMS</span>
+					</div>
+				</v-app-bar-title>
+
+				<!-- GitHub Logo/Link -->
+				<template v-slot:append>
+					<v-btn
+						href="https://github.com/lisham/MergeSMS"
+						target="_blank"
+						icon="mdi-github"
+						variant="text"
+						density="compact"
+						class="my-auto"
+						aria-label="GitHub Repository"
+					></v-btn>
+				</template>
+
+			</v-app-bar>
+
+			<v-main>
+				<v-container
+					class="
+						d-flex 
+						align-center 
+						justify-center 
+						flex-wrap 
+						text-center 
+						mx-auto"
+					>
+					<v-row>
+						<v-col
+							cols="12"
+							xs="12"
+							sm="12"
+							>
+							<v-locale-provider ltr>
+
+								<v-snackbar
+									v-model="toastVisible"
+									color="black"
+									:timeout="toastTimeout"
+									bottom
+									right
+								>
+									<div v-html="toast"></div>
+								</v-snackbar>
+
+								<v-dialog
+									v-model="sendCompletedDialog"
+									max-width="400"
+									persistent
+								>
+									<v-card>
+										<v-card-title class="text-h6"></v-card-title>
+
+										<v-card-text>
+											{{ sendCompletedMessage }}
+										</v-card-text>
+
+										<v-card-actions class="justify-end">
+											<v-btn
+												color="primary"
+												@click="sendCompletedDialog = false"
+											>
+												OK
+											</v-btn>
+										</v-card-actions>
+									</v-card>
+								</v-dialog>
+
+								<v-dialog
+									v-model="delProjDialog"
+									max-width="400"
+								>
+									<v-card>
+										<v-card-title class="text-h6"></v-card-title>
+										
+										<v-card-text>
+											Are you sure you want to delete the project <strong>{{ projToDelete }}</strong>?
+										</v-card-text>
+										
+										<v-card-actions>
+											
+											<v-spacer></v-spacer>
+											
+											<v-btn
+												color="red-darken-1"
+												density="compact"
+												icon
+												variant="elevated"
+												class="mx-1"
+												@click="deleteProject"
+											>
+												<v-icon size="18">mdi-check</v-icon>
+											</v-btn>
+
+											<v-btn
+												color="grey-darken-1"
+												density="compact"
+												icon
+												variant="elevated"
+												class="mx-1"
+												@click="delProjDialog = false"
+											>
+												<v-icon size="18">mdi-close</v-icon>
+											</v-btn>
+
+										</v-card-actions>
+									</v-card>
+								</v-dialog>
+
+								<v-dialog
+									v-model="delTXTDialog"
+									max-width="400"
+								>
+									<v-card>
+										<v-card-title class="text-h6"></v-card-title>
+										
+										<v-card-text>
+											Are you sure you want to delete the template file <strong>{{ txtToDelete }}</strong>?
+										</v-card-text>
+										
+										<v-card-actions>
+											
+											<v-spacer></v-spacer>
+											
+											<v-btn
+												color="red-darken-1"
+												density="compact"
+												icon
+												variant="elevated"
+												class="mx-1"
+												@click="deleteTXT"
+											>
+												<v-icon size="18">mdi-check</v-icon>
+											</v-btn>
+
+											<v-btn
+												color="grey-darken-1"
+												density="compact"
+												icon
+												variant="elevated"
+												class="mx-1"
+												@click="delTXTDialog = false"
+											>
+												<v-icon size="18">mdi-close</v-icon>
+											</v-btn>
+
+										</v-card-actions>
+									</v-card>
+								</v-dialog>
+
+								<v-dialog
+									v-model="delCSVDialog"
+									max-width="400"
+								>
+									<v-card>
+										<v-card-title class="text-h6"></v-card-title>
+										
+										<v-card-text>
+											Are you sure you want to delete the CSV file <strong>{{ csvToDelete }}</strong>?
+										</v-card-text>
+										
+										<v-card-actions>
+											
+											<v-spacer></v-spacer>
+											
+											<v-btn
+												color="red-darken-1"
+												density="compact"
+												icon
+												variant="elevated"
+												class="mx-1"
+												@click="deleteCsv"
+											>
+												<v-icon size="18">mdi-check</v-icon>
+											</v-btn>
+
+											<v-btn
+												color="grey-darken-1"
+												density="compact"
+												icon
+												variant="elevated"
+												class="mx-1"
+												@click="delCSVDialog = false"
+											>
+												<v-icon size="18">mdi-close</v-icon>
+											</v-btn>
+
+										</v-card-actions>
+									</v-card>
+								</v-dialog>
+
+								<!-- Project Managmanet / Manager -->
+								<v-expansion-panels>
+									<v-expansion-panel class="mb-3">
+
+										<v-expansion-panel-title class="bg-deep-orange-darken-4">
+											<span><b>Project Manager</b></span>
+											<v-spacer></v-spacer>
+											<span><b>{{ selectedProject }}</b><span class="ms-3 me-3">|</span></span>
+										</v-expansion-panel-title>
+
+										<v-expansion-panel-text>
+											<v-card class="ma-4 pa-4">
+												<v-card-text>
+
+													<!-- Creating new project -->
+													<div class="d-flex align-center ga-0">
+														<v-text-field
+															label="New project"
+															density="compact"
+															v-model="newProjectName"
+															hide-details
+															></v-text-field>
+															
+															<v-btn
+																color="primary"
+																@click="createProject"
+																height="40"
+																class="btn-create"
+															>
+															Create Project
+														</v-btn>
+													</div>
+
+													<!-- Projects list -->
+													<table class="project-table">
+
+														<tr>
+															<th>Select</th>
+															<th>Project</th>
+															<th>Phone Rule</th>
+															<th>Actions</th>
+														</tr>
+
+														<tr
+															v-for="p in projects"
+															:key="p.name"
+															:class="{ 'project-active': selectedProject === p.name }"
+														>
+
+															<!-- Select Project -->
+															<td>
+																<input
+																	type="radio"
+																	:value="p.name"
+																	v-model="selectedProject"
+																	@change="setProject(p.name)"
+																>
+															</td>
+
+															<td>
+
+																<!-- Rename Project Box -->
+																<div v-if="editProject === p.name" class="d-flex align-center ga-0">
+
+																	<v-text-field
+																		v-model="editName"
+																		variant="outlined"
+																		color="orange-darken-3"
+																		base-color="orange-darken-3"
+																		density="compact"
+																		class="input-rename"
+																		hide-details
+																	></v-text-field>
+
+																	<v-btn
+																		color="green-darken-1"
+																		density="compact"
+																		icon
+																		class="btn-save"
+																		@click="finishRename"
+																	>
+																		<v-icon size="18">mdi-check</v-icon>
+																	</v-btn>
+
+																	<v-btn
+																		color="grey-darken-1"
+																		density="compact"
+																		icon
+																		@click="cancelRename"
+																	>
+																		<v-icon size="18">mdi-close</v-icon>
+																	</v-btn>
+
+																</div>
+
+																<div v-else>
+																	{{ p.name }}
+																</div>
+
+															</td>
+
+															<td>
+																<v-menu location="bottom">
+																	<template v-slot:activator="{ props }">
+																		<v-btn
+																			v-bind="props"
+																			variant="outlined"
+																			density="compact"
+																			color="blue-grey-darken-1"
+																			class="text-none"
+																		>
+																			{{ p.country !== '-' ? p.country : 'Select' }}
+																			<v-icon right>mdi-chevron-down</v-icon>
+																		</v-btn>
+																	</template>
+																	<v-list density="compact">
+																		<v-list-item
+																			v-for="c in availableCountries"
+																			:key="c"
+																			@click="updateProjectCountry(p.name, c)"
+																		>
+																			<v-list-item-title>{{ c }}</v-list-item-title>
+																		</v-list-item>
+																	</v-list>
+																</v-menu>
+															</td>
+
+															<td>
+																<v-btn
+																	color="orange-lighten-2"
+																	density="compact"
+																	icon
+																	class="mx-1"
+																	@click="startRename(p.name)"
+																>
+																	<v-icon size="20">mdi-rename</v-icon>
+																</v-btn>
+
+																<v-btn
+																	color="red-darken-2"
+																	density="compact"
+																	icon
+																	class="mx-1"
+																	@click="openDelProjDialog(p.name)"
+																>
+																	<v-icon size="20">mdi-delete</v-icon>
+																</v-btn>
+
+															</td>
+
+														</tr>
+
+													</table>
+
+												</v-card-text>
+											</v-card>
+										</v-expansion-panel-text>
+
+									</v-expansion-panel>
+								</v-expansion-panels>
+
+
+								<!-- Templates (TXT-Files) Managment / Manager -->
+								<v-expansion-panels>
+									<v-expansion-panel class="mb-3">
+
+										<v-expansion-panel-title class="bg-deep-orange-darken-4">
+											<span><b>Templates (TXT-Files) Manager</b></span>
+									
+											<v-spacer></v-spacer>
+									
+											<span v-if="selectedTxt"><b>{{ selectedTxt }}<span class="ms-3 me-3">|</span></b></span>
+										</v-expansion-panel-title>
+
+										<v-expansion-panel-text>
+											
+											<v-card class="ma-4 pa-4">
+
+												<v-card-text>
+													<!-- Upload TXT file -->
+													<v-file-input
+														label="Upload a .txt file..."
+														variant="filled"
+														prepend-inner-icon="mdi-upload"
+														prepend-icon=""
+														density="compact"
+														accept=".txt"
+														class="ma-0 pa-0"
+														hide-details
+														@change="uploadTXT"
+													></v-file-input>
+
+													<!-- TXT Files List -->
+													<div v-if="txtFiles.length === 0" class="no-file-message">
+														No Template (.txt) files found for this project.
+													</div>
+
+													<table v-else class="project-table">
+
+														<tr>
+															<th>Select</th>
+															<th>TXT File</th>
+															<th>Actions</th>
+														</tr>
+
+														<tr
+															v-for="t in txtFiles"
+															:key="t"
+															:class="{ 'project-active': selectedTxt === t }"
+														>
+															<td>
+																<input
+																	type="radio"
+																	:value="t"
+																	v-model="selectedTxt"
+																	@change="setTxt(t)"
+																>
+															</td>
+
+															<td>
+																<div v-if="editTxt === t" class="d-flex align-center ga-0"
+																>
+																	<v-text-field
+																		v-model="editTxtName"
+																		variant="outlined"
+																		color="orange-darken-3"
+																		base-color="orange-darken-3"
+																		density="compact"
+																		class="input-rename"
+																		hide-details
+																	></v-text-field>
+
+																	<v-btn
+																		color="green-darken-1"
+																		density="compact"
+																		icon
+																		class="btn-save"
+																		@click="finishRenameTxt"
+																	>
+																		<v-icon size="18">mdi-check</v-icon>
+																	</v-btn>
+
+
+																	<v-btn
+																		color="grey-darken-1"
+																		density="compact"
+																		icon
+																		@click="cancelRenameTxt"
+																	>
+																		<v-icon size="18">mdi-close</v-icon>
+																	</v-btn>
+
+																</div>
+
+																<div v-else>
+																	{{ t }}
+																</div>
+															</td>
+
+															<td>
+																<v-btn
+																	color="blue-darken-2"
+																	density="compact"
+																	icon
+																	class="mx-1"
+																	@click="duplicateTXT(t)"
+																>
+																	<v-icon size="20">mdi-content-duplicate</v-icon>
+																</v-btn>
+
+																<v-btn
+																	color="orange-lighten-2"
+																	density="compact"
+																	icon
+																	class="mx-1"
+																	@click="startRenameTXT(t)"
+																>
+																	<v-icon size="20">mdi-rename</v-icon>
+																</v-btn>
+
+																<v-btn
+																	color="red-darken-2"
+																	density="compact"
+																	icon
+																	class="mx-1"
+																	@click="openDelTXTDialog(t)"
+																>
+																	<v-icon size="20">mdi-delete</v-icon>
+																</v-btn>
+
+															</td>
+														</tr>
+													</table>
+
+												</v-card-text>
+											
+											</v-card>
+
+											<v-card v-if="txtFiles.length > 0" class="ma-4 pa-4">
+									
+												<v-card-text>
+
+													<!-- Character and SMS counter; SMS save button -->
+													<v-toolbar color="transparent" height="auto" class="ma-0 pa-0">
+														<p
+															class="ma-0"
+															style="margin-left: 7px !important;"
+														>
+															Chars: ~<span style="color:red">{{ charCount }}</span> | 
+															SMS: ~<span style="color:red">{{ smsCount }}</span> | 
+															Chars left for next: ~<span style="color:red">{{ remainingChars }}</span>
+														</p>
+
+														<v-spacer></v-spacer>
+
+														<!-- BTN | Edit Template (txt) | LTR-RTL -->
+														<v-tooltip
+															:text="editorIsRTL ? 'Toggle to LTR mode' : 'Toggle to RTL mode'"
+															location="bottom"
+														>
+															<template v-slot:activator="{ props }">
+																
+																<v-btn
+																	color="blue-darken-2"
+																	density="compact"
+																	icon
+																	v-bind="props"
+																	variant="elevated"
+																	class="mx-1"
+																	@click="toggleEditorDirection"
+																	:disabled="!selectedTxt"
+																>
+																	<v-icon size="18">{{ editorIsRTL ? 'mdi-format-pilcrow-arrow-right' : 'mdi-format-pilcrow-arrow-left' }}</v-icon>
+																</v-btn>
+
+															</template>
+														</v-tooltip>
+
+														<!-- BTN | Edit Template (txt) | Save -->
+														<v-btn
+															color="green-darken-2"
+															density="compact"
+															icon
+															variant="elevated"
+															class="mx-1"
+															@click="btnSaveTXT()"
+															:disabled="!txtDirty"
+															>
+															<v-icon size="18">mdi-content-save</v-icon>
+														</v-btn>
+
+														<!-- BTN | Edit Template (txt) | Cancel -->
+														<v-btn
+															color="grey-darken-1"
+															density="compact"
+															icon
+															variant="elevated"
+															class="mx-1"
+															@click="btnCancelTXT"
+															:disabled="!txtDirty"
+														>
+															<v-icon size="18">mdi-close</v-icon>
+														</v-btn>
+
+
+													</v-toolbar>
+
+													<!-- SMS Content | Preview -->
+													<div
+														v-if="previewMode"
+														class="ma-1 preview-output"
+														:class="editorIsRTL ? 'dir-rtl' : 'dir-ltr'"
+														v-html="previewText"
+													></div>
+													
+													<!-- SMS Content | Show and Edit -->
+													<v-textarea
+														v-else
+														class="ma-1 sms-textarea"
+														:class="editorIsRTL ? 'dir-rtl' : 'dir-ltr'"
+														placeholder="SMS Content"
+														variant="filled"
+														rows="3"
+														auto-grow
+														id="editor"
+														ref="editor"
+														v-model="message"
+														:disabled="!selectedTxt"
+														hide-details
+														@input="markTXTDirty"
+														@blur="markTXTDirty"
+													></v-textarea>
+
+													<v-toolbar color="transparent" height="auto" class="ma-0 pa-0">
+
+														<!-- Fields -> Chips -->
+														<div class="ma-0" v-if="!previewMode">
+															<v-chip
+																v-for="field in csvFields"
+																:key="field"
+																class="ma-1"
+																color="primary"
+																variant="outlined"
+																@click="insertField(field)"
+															>
+																{{ field }}
+															</v-chip>
+														</div>
+
+														<v-spacer></v-spacer>
+
+														<!-- Preview control -->
+														<div class="ma-0" v-if="previewMode">
+															<v-checkbox
+																v-model="showOnlyAllowed"
+																label="Just show allowed"
+																hide-details
+																density="compact"
+																class="me-4"
+															></v-checkbox>
+														</div>
+
+														<div class="ma-0">
+															<v-chip
+																class="ma-1"
+																color="info"
+																variant="outlined"
+																@click="prevPreview"
+																:disabled="!previewMode || previewIndex === 0"
+															>
+																<v-icon size="18">mdi-skip-previous</v-icon>
+															</v-chip>
+
+															<v-chip
+																class="ma-1"
+																color="secondary"
+																variant="outlined"
+																:disabled="!previewMode"
+															>{{ previewIndex + 1 }} / {{ previewRows.length }}</v-chip>
+
+															<v-chip
+																class="ma-1"
+																color="info"
+																variant="outlined"
+																@click="nextPreview"
+																:disabled="!previewMode || previewIndex >= previewRows.length - 1"
+															>
+																<v-icon size="18">mdi-skip-next</v-icon>
+															</v-chip>
+
+															<v-tooltip
+																:text="previewMode ? 'Exit Preview' : 'Preview'"
+																location="bottom"
+															>
+																<template v-slot:activator="{ props }">
+
+																	<v-chip
+																		class="ma-1"
+																		:color="previewMode ? 'red-darken-1' : 'primary'"
+																		variant="outlined"
+																		icon
+																		v-bind="props"
+																		@click="togglePreview"
+																	>
+																		<v-icon size="18">{{ previewMode ? 'mdi-stop' : 'mdi-play' }}</v-icon>
+																	</v-chip>
+
+																</template>
+															</v-tooltip>
+
+														</div>
+
+													</v-toolbar>
+
+												</v-card-text>
+											</v-card>
+										</v-expansion-panel-text>
+
+									</v-expansion-panel>
+								</v-expansion-panels>
+
+
+								<!-- CSV-Files Managment / Manager -->
+								<v-expansion-panels @update:model-value="onPanelChange">
+									<v-expansion-panel class="mb-3">
+
+										<v-expansion-panel-title class="bg-deep-orange-darken-4">
+											<span><b>Lists (CSV-Files) Manager</b></span>
+									
+											<v-spacer></v-spacer>
+									
+											<span v-if="selectedCsv"><b>{{ selectedCsv }}<span class="ms-3 me-3">|</span></b></span>
+										</v-expansion-panel-title>
+
+										<v-expansion-panel-text>
+											<v-card class="ma-4 pa-4">
+
+												<v-card-text>
+
+													<!-- Upload CSV file -->
+													<v-file-input
+														label="Upload a .csv file..."
+														variant="filled"
+														prepend-inner-icon="mdi-upload"
+														prepend-icon=""
+														density="compact"
+														accept=".csv"
+														class="ma-0 pa-0"
+														hide-details
+														@change="uploadCsv"
+													></v-file-input>
+
+													<!-- CSV Files List -->
+													<div v-if="csvFiles.length === 0" class="no-file-message">
+														No CSV files found for this project.
+													</div>
+
+													<table v-else class="project-table">
+
+														<tr>
+															<th>Select</th>
+															<th>CSV File</th>
+															<th>Actions</th>
+														</tr>
+
+														<tr
+															v-for="f in csvFiles"
+															:key="f"
+															:class="{ 'project-active': selectedCsv === f }"
+														>
+															<td>
+																<input
+																	type="radio"
+																	:value="f"
+																	v-model="selectedCsv"
+																	@change="setCsv(f)"
+																>
+															</td>
+
+															<td>
+																<div v-if="editCsv === f" class="d-flex align-center ga-0"
+																>
+																	<v-text-field
+																		v-model="editCsvName"
+																		variant="outlined"
+																		color="orange-darken-3"
+																		base-color="orange-darken-3"
+																		density="compact"
+																		class="input-rename"
+																		hide-details
+																	></v-text-field>
+
+																	<!-- BTN | Rename CSV File | Save -->
+																	<v-btn
+																		color="green-darken-1"
+																		density="compact"
+																		icon
+																		class="btn-save"
+																		@click="finishRenameCsv"
+																	>
+																		<v-icon size="18">mdi-check</v-icon>
+																	</v-btn>
+
+
+																	<!-- BTN | Rename CSV File | Cancel -->
+																	<v-btn
+																		color="grey-darken-1"
+																		density="compact"
+																		icon
+																		@click="cancelRenameCsv"
+																	>
+																		<v-icon size="18">mdi-close</v-icon>
+																	</v-btn>
+
+																</div>
+
+																<div v-else>
+																	{{ f }}
+																</div>
+															</td>
+
+															<td>
+																<v-btn
+																	color="blue-darken-2"
+																	density="compact"
+																	icon
+																	class="mx-1"
+																	@click="duplicateCSV(f)"
+																>
+																	<v-icon size="20">mdi-content-duplicate</v-icon>
+																</v-btn>
+
+																<v-btn
+																	color="orange-lighten-2"
+																	density="compact"
+																	icon
+																	class="mx-1"
+																	@click="startRenameCsv(f)"
+																>
+																	<v-icon size="20">mdi-rename</v-icon>
+																</v-btn>
+
+																<v-btn
+																	color="red-darken-2"
+																	density="compact"
+																	icon
+																	class="mx-1"
+																	@click="openDelCSVDialog(f)"
+																>
+																	<v-icon size="20">mdi-delete</v-icon>
+																</v-btn>
+
+															</td>
+														</tr>
+													</table>
+
+												</v-card-text>
+											</v-card>
+
+											<v-card v-if="csvFiles.length > 0" class="ma-4 pa-4">
+												<v-card-text>
+
+													<!-- BTN Toolbar | Show & Edit CSV content | Show/Hide Table | Edit cells | Dry-Run -->
+													<v-toolbar color="transparent" height="auto" class="ma-0 pa-0">
+
+														<v-btn
+															:disabled="csvButtonDisabled"
+															:color="showCSV ? 'orange-darken-3' : 'blue-darken-4'"
+															density="compact"
+															variant="elevated"
+															class="mx-1"
+															@click="toggleCSV"
+														>
+															{{ showCSV ? 'Hide CSV table' : 'Show CSV table' }}
+														</v-btn>
+
+														<v-spacer></v-spacer>
+
+														<!-- BTN | Edit Cells | Save -->
+														<v-btn
+															v-if="showCSV"
+															color="green-darken-1"
+															density="compact"
+															icon
+															variant="elevated"
+															class="mx-1"
+															@click="btnSaveCSV()"
+															:disabled="!csvDirty"
+															>
+															<v-icon size="18">mdi-content-save</v-icon>
+														</v-btn>
+														
+														<!-- BTN | Edit Cells | Cancel -->
+														<v-btn
+															v-if="showCSV"
+															color="red-darken-1"
+															density="compact"
+															icon
+															variant="elevated"
+															class="mx-1"
+															@click="btnCancelCSV"
+															:disabled="!csvDirty"
+														>
+															<v-icon size="18">mdi-close</v-icon>
+														</v-btn>
+
+
+														<!-- BTN | Dry-Run -->
+														<v-tooltip text="Dry-Run" location="bottom">
+															<template v-slot:activator="{ props }">
+
+																<v-btn
+																	v-if="showCSV"
+																	v-bind="props"
+																	color="blue-darken-4"
+																	density="compact"
+																	icon
+																	variant="elevated"
+																	class="mx-1"
+																	@click="dryRun()"
+																	>
+																	<v-icon size="18">mdi-play</v-icon>
+																</v-btn>
+
+															</template>
+														</v-tooltip>
+
+													</v-toolbar>
+
+													<!-- CSV Content Table -->
+													<div
+														v-show="showCSV"
+														class="mx-1"
+													>
+														<div id="csvBox" class="li-csvBox"></div>
+													</div>
+
+												</v-card-text>
+											</v-card>
+
+										</v-expansion-panel-text>
+
+									</v-expansion-panel>
+								</v-expansion-panels>
+
+
+								<!-- KDE-Connect Devices Managment / Manager -->
+								<v-expansion-panels v-if="selectedCsv && selectedTxt">
+									<v-expansion-panel class="mb-3">
+
+										<v-expansion-panel-title class="bg-deep-orange-darken-4">
+											<span><b>KDE-Connect Devices Manager</b></span>
+											
+											<v-spacer></v-spacer>
+											
+											<span v-if="selectedDeviceName"><b>{{ selectedDeviceName }}<span class="ms-3 me-3">|</span></b></span>
+										</v-expansion-panel-title>
+
+										<v-expansion-panel-text>
+											<v-card class="ma-4 pa-4">
+												<v-card-text>
+
+													<!-- BTN | Search for devices -->
+													<v-toolbar color="transparent">
+														<v-btn
+															color="blue-darken-4"
+															density="compact"
+															variant="elevated"
+															class="ma-0"
+															:loading="loadingDevices"
+															:disabled="loadingDevices"
+															@click="loadDevices()"
+														>
+															Search Devices...
+														</v-btn>
+														
+														<div v-if="loadingDevices" class="device-loading-msg">
+															<v-progress-circular
+																indeterminate
+																color="blue-darken-3"
+																size="20"
+																hide-details
+																class="ma-0"
+															></v-progress-circular>
+
+															Searching for devices, please wait...
+														</div>
+
+														<v-chip
+															v-if="selectedDeviceName"
+															color="blue-darken-4"
+															variant="elevated"
+															label
+															density="compact"
+															class="ms-5 px-5 py-3"
+															hide-details
+														>	
+															Selected Device: <span class="font-weight-bold" style="margin-left: 14px;">{{ deviceName_selected }}</span>
+														</v-chip>	
+
+														<v-spacer></v-spacer>
+														
+													</v-toolbar>
+
+													<!-- Device display and selection area -->
+													<div v-if="devices.length" class="pa-2">
+														<v-card class="pa-4">
+
+															<table class="project-table">
+
+																<tr>
+																	<th>Select</th>
+																	<th>Device Name</th>
+																	<th>Device ID</th>
+																</tr>
+
+																<tr
+																	v-for="device in devices"
+																	:key="device.name"
+																	:class="{ 'project-active': selectedDeviceName === device.name }"
+																>
+																	<td>
+																		<input
+																			type="radio"
+																			:value="device.name"
+																			v-model="selectedDeviceName"
+																		>
+																	</td>
+																	<td>
+																		{{ device.name }}
+																	</td>
+																	<td>
+																		{{ device.id }}
+																	</td>
+																</tr>
+
+															</table>
+
+														</v-card>
+													</div>
+
+												</v-card-text>
+											</v-card>
+										</v-expansion-panel-text>
+
+									</v-expansion-panel>
+								</v-expansion-panels>
+						
+
+								<!-- Send SMS -->
+								<v-expansion-panels v-if="selectedDeviceName && selectedCsv && selectedTxt">
+									<v-expansion-panel class="mb-3">
+
+										<v-expansion-panel-title class="bg-deep-orange-darken-4">
+											<span><b>Send SMS</b></span>
+											<v-spacer></v-spacer>
+										</v-expansion-panel-title>
+
+										<v-expansion-panel-text>
+											<v-card class="ma-4 pa-4">
+												<v-card-text>
+
+													<v-toolbar color="transparent">
+
+														<!-- KDE-Connect On & Off switch -->
+														<v-switch
+															v-model="kdeconnect_activation"
+															color="primary"
+															density="compact"
+															class="d-inline-flex me-5"
+															hide-details
+															:disabled="sending"
+															style="margin-left: 15px;"
+															@update:model-value="saveKDEConnect"
+														>
+															<template v-slot:label>
+																<span :style="{ color: kdeconnect_activation ? 'green' : 'red' }">KDE-Connect</span>
+																</span>
+															</template>
+														</v-switch>
+
+														<!-- Dry-Run Mood On & Off switch -->
+														<v-switch
+															v-if="!kdeconnect_activation"
+															v-model="dryrunMode"
+															color="primary"
+															density="compact"
+															class="d-inline-flex"
+															hide-details
+															:disabled="sending"
+															@update:model-value="saveDryRun"
+														>
+															<template v-slot:label>
+																<span :style="{ color: dryrunMode ? 'green' : 'red' }">Dry-Run</span>
+															</template>
+														</v-switch>
+
+														<v-spacer></v-spacer>
+
+														<!-- Delay drop-down selector -->
+														<v-menu v-if="kdeconnect_activation || !dryrunMode">
+															<template #activator="{ props }">
+																<v-btn
+																	v-bind="props"
+																	density="compact"
+																	variant="outlined"
+																	color="blue-darken-4"
+																	:disabled="sending"
+																	class="mt-0"
+																	style="min-width: 110px;"
+																>
+																	Delay: {{ delay_seconds }}
+																</v-btn>
+															</template>
+
+															<v-list>
+																<v-list-item
+																	v-for="s in delay_options"
+																	:key="s"
+																	@click="delay_seconds = s; saveDelay(s)"
+																>
+																	{{ s }} seconds
+																</v-list-item>
+															</v-list>
+														</v-menu>
+
+														<!-- BTN | Start sending SMS -->
+														<v-btn
+															color="green-darken-2"
+															density="compact"
+															variant="elevated"
+															class="mt-0 ms-5"
+															:disabled="sending"
+															:loading="sending"
+															@click="startSending()"
+														>
+															{{ sending ? 'Sending...' : 'Start sending SMS' }}
+														</v-btn>
+
+													</v-toolbar>
+
+													<!-- Sending status section -->
+													<v-card class="pa-4 mt-4" v-if="Array.isArray(sendResults) && sendResults.length">
+														<v-card-text>
+															<v-progress-linear
+																v-if="sending || sendStats.total"
+																class="mt-4"
+																:model-value="sendProgressPercent"
+																height="20"
+																color="green"
+															>
+																<template #default>
+																	<strong>{{ sendProgressPercent }}%</strong>
+																</template>
+															</v-progress-linear>
+
+															<div class="mt-3"
+																v-if="sending || sendStats.total"
+															>
+																Sent: <b>{{ sendStats.sent }}</b> |
+																Err: <b>{{ sendStats.failed }}</b> |
+																Skipped: <b>{{ sendStats.skipped }}</b> |
+																Total: <b>{{ sendStats.total }}</b>
+															</div>
+
+															<div ref="sendResultsWrapper" class="send-results-wrapper">
+																<table class="send-status-table">
+																	<thead>
+																		<tr>
+																			<th>No</th>
+																			<th>First & Last Name</th>
+																			<th>Mob.</th>
+																			<th>Dly</th>
+																			<th>Status</th>
+																			<th>Msg.</th>
+																			<th>Err.</th>
+																		</tr>
+																	</thead>
+																	<tbody>
+																		<template v-for="(item, idx) in sendResults" :key="idx">
+																			<tr>
+																				<td>{{ idx + 1 }}</td>
+																				<td>{{ item.name }}</td>
+																				<td dir="ltr">{{ item.phone }}</td>
+																				<td>{{ item.delay }}</td>
+																				<td>
+																					<v-chip :color="statusColor(item.status)" size="small" variant="flat">
+																						{{ item.status }}
+																					</v-chip>
+																				</td>
+																				<td>{{ item.message }}</td>
+																				<td>{{ item.error }}</td>
+																			</tr>
+																		</template>
+																	</tbody>
+																</table>
+																<div ref="bottomAnchor"></div>
+															</div>
+														</v-card-text>
+													</v-card>
+
+
+												</v-card-text>
+											</v-card>
+										</v-expansion-panel-text>
+
+									</v-expansion-panel>
+								</v-expansion-panels>
+
+							</v-locale-provider>
+						</v-col>
+					</v-row>
+				</v-container>
+			</v-main>
+
+			<!-- Use v-footer with 'app' prop to stick it to the bottom of the v-app layout -->
+			<v-footer
+				app
+				color="deep-orange-darken-4"
+				class="
+					d-flex
+					align-center
+					justify-center
+					text-center
+					px-2
+					py-1"
+			>
+				<div class="
+					text-caption
+					d-flex
+					align-center
+					justify-center"
+				>
+					<span class="mr-3">MergeSMS | {{ appVersion }} | 2026 | Powered by</span>
+
+					<!-- Vue.js Link -->
+					<v-btn
+						href="https://vuejs.org/"
+						target="_blank"
+						icon="mdi-vuejs"
+						variant="text"
+						size="small"
+						color="white"
+						class="mx-1"
+						aria-label="Vue.js"
+					></v-btn>
+
+					<!-- Vuetify Link -->
+					<v-btn
+						href="https://vuetifyjs.com"
+						target="_blank"
+						icon="mdi-vuetify"
+						variant="text"
+						size="small"
+						color="white"
+						class="mx-1"
+						aria-label="Vuetify"
+					></v-btn>
+
+					<!-- Python Link -->
+					<v-btn
+						href="https://www.python.org/"
+						target="_blank"
+						icon="mdi-language-python"
+						variant="text"
+						size="small"
+						color="white"
+						class="mx-1"
+						aria-label="Python"
+					></v-btn>
+
+					<!-- Material Design Link -->
+					<v-btn
+						href="https://material.io/"
+						target="_blank"
+						icon="mdi-material-design"
+						variant="text"
+						size="small"
+						color="white"
+						class="mx-1"
+						aria-label="Material Design"
+					></v-btn>
+				</div>
+			</v-footer>
+
+		</v-app>
+	</div>
+
+
+	<div style="display: none;">
+		<!-- Vue.js -->
+		<script src="files/vue.global.js"></script>
+		<!-- <script src="files/vue.global.prod.min.js"></script> -->
+		<script src="files/axios.min.js"></script>
+		<script src="files/vuetify.min.js"></script>
+		<script src="files/app.js"></script>
+
+	</div>
+
+</body>
+</html>

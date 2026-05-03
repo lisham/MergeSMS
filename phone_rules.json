@@ -1,0 +1,58 @@
+{
+	"IR": {
+		"country_code": "98",
+		"phone_prefix": "+98",
+		"mobile_pattern": "^09\\d{9}$",
+		"local_prefix": "0",
+		"local_length": 11
+	},
+	"US": {
+		"country_code": "1",
+		"phone_prefix": "+1",
+		"mobile_pattern": "^[2-9]\\d{2}[2-9]\\d{6}$",
+		"local_prefix": "",
+		"local_length": 10
+	},
+	"CA": {
+		"country_code": "1",
+		"phone_prefix": "+1",
+		"mobile_pattern": "^[2-9]\\d{2}[2-9]\\d{6}$",
+		"local_prefix": "",
+		"local_length": 10
+	},
+	"UK": {
+		"country_code": "44",
+		"phone_prefix": "+44",
+		"mobile_pattern": "^07[1-9]\\d{8}$",
+		"local_prefix": "0",
+		"local_length": 11
+	},
+	"DE": {
+		"country_code": "49",
+		"phone_prefix": "+49",
+		"mobile_pattern": "^01[5-7]\\d{7,9}$",
+		"local_prefix": "0",
+		"local_length": 11
+	},
+	"SE": {
+		"country_code": "46",
+		"phone_prefix": "+46",
+		"mobile_pattern": "^07\\d{8}$",
+		"local_prefix": "0",
+		"local_length": 10
+	},
+	"TR": {
+		"country_code": "90",
+		"phone_prefix": "+90",
+		"mobile_pattern": "^05\\d{9}$",
+		"local_prefix": "0",
+		"local_length": 11
+	},
+	"AE": {
+		"country_code": "971",
+		"phone_prefix": "+971",
+		"mobile_pattern": "^05[024568]\\d{7}$",
+		"local_prefix": "0",
+		"local_length": 10
+	}
+}

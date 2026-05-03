@@ -1,0 +1,5 @@
+﻿Dear {pre} {lastname},
+We are thrilled to welcome you to the Annual Tech Conference.
+Your presentation is scheduled for tomorrow at {time}.
+We will contact you if there are any sudden updates.
+See you soon!
