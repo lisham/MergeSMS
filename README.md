@@ -1,4 +1,4 @@
-# SMS Sender Web App 🚀
+# MergeSMS | SMS Sender Web App 🚀
 
 A lightweight and easy-to-use local bulk SMS web application built with a **Flask** (Python) backend and a modern **Vue.js/Vuetify** frontend.
 
