@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.7.5] - 2026-05-08
+### Added
+- Added a row editor dialog for CSV table rows so users can edit row data in a modal form.
+### Fixed
+- Fixed the CSV table layout by replacing inline editable cells with view-only text cells and compacting table styling.
+- Fixed the Add Row button so it now opens the row editor dialog for creating a new CSV row instead of inserting an empty row directly.
+### Changed
+- Changed CSV row editing to use a single dialog interface instead of inline cell inputs.
+- Improved the CSV table display and action buttons for better usability and width handling.
+
 ## [3.7.4] - 2026-04-24
 ### Added
 - Added header and footer.

@@ -26,7 +26,7 @@ function getSmsLimits(encoding, length) {
 const { createVuetify } = Vuetify;
 
 const vuetify = createVuetify ( {
-	rtl: { fa: true } ,
+	rtl: { fa: false } ,
 } ) ;
 
 const app = Vue.createApp ( {
@@ -56,7 +56,11 @@ const app = Vue.createApp ( {
 
 			editCsv: null,
 			editCsvName: "",
-
+			
+			rowEditorDialog: false,
+			editedRowIndex: null,
+			editedRowData: {},
+			
 			delCSVDialog: false,
 			csvToDelete: null,
 
@@ -71,6 +75,8 @@ const app = Vue.createApp ( {
 			csvHeaders: [],
 			csvRows: [],
 			csvLoaded: false,
+
+			dryRunStatuses: [],
 
 			txtFiles: [],
 			selectedTxt: null,
@@ -914,152 +920,28 @@ const app = Vue.createApp ( {
 			this.csvHeaders = data.headers || [];
 			this.csvRows = data.rows || [];
 			this.csvLoaded = true;
-			// this.showCSV = true;
-
-			this.$nextTick(() => {
-				this.renderCSV();
-			});
-		},
-
-		renderCSV() {
-			const container = document.getElementById("csvBox");
-			if (!container) return;
-			
-			// Step 1: Build the HTML (without @input and @blur)
-			let html = `
-				<div class="csv-table-wrap">
-					<table class="csv-table">
-						<thead>
-							<tr>
-			`;
-
-			// Columns of CSV
-			for (const h of this.csvHeaders) {
-				html += `<th>${h}</th>`;
-			}
-
-			// Add action column
-			html += `<th style="width:80px;">Action</th>`;
-
-			html += `
-							</tr>
-						</thead>
-						<tbody>
-			`;
-
-			// Render of records
-			this.csvRows.forEach((row, rIdx) => {
-				html += '<tr>';
-
-				this.csvHeaders.forEach(h => {
-					const val = row[h] || '';
-					const dir = (h === 'mob') ? 'dir="ltr"' : '';
-
-					html += `
-						<td contenteditable="true" ${dir}
-							data-row="${rIdx}"
-							data-col="${h}">
-							${val}
-						</td>`;
-				});
-
-				// Del btn
-				html += `
-					<td>
-						<button
-							class="delete-row-btn"
-							data-del-row="${rIdx}"
-						>
-							🗑️
-						</button>
-					</td>
-				`;
-				// <i class="mdi mdi-delete" style="font-size: 20px; pointer-events: none;"></i>
-				html += '</tr>';
-			});
-
-			// Add new record
-			html += `
-				<tr>
-					<td colspan="${this.csvHeaders.length + 1}" style="text-align:center;">
-						<button id="addRowBtn" class="add-row-btn">➕ Add Row</button>
-					</td>
-				</tr>
-			`;
-
-			html += `
-						</tbody>
-					</table>
-				</div>
-			`;
-
-			// Step 2: Inject the HTML
-			container.innerHTML = html;
-
-			// Step 3: Add event listeners to all cells
-			const cells = container.querySelectorAll("td[contenteditable='true']");
-
-			cells.forEach(cell => {
-				cell.addEventListener("input", this._onCellEdit.bind(this));
-				cell.addEventListener("blur", this._onCellEdit.bind(this));
-			});
-
-			// Del btns
-			const deleteBtns = container.querySelectorAll(".delete-row-btn");
-			deleteBtns.forEach(btn => {
-				btn.addEventListener("click", (e) => {
-					const idx = parseInt(e.target.getAttribute("data-del-row"));
-
-					if (confirm("Are you sure you want to delete this record?")) {
-						this.csvRows.splice(idx, 1);
-						this.csvDirty = true;
-						this.renderCSV();
-					}
-				});
-			});
-
-
-			// Add record button
-			const addBtn = document.getElementById("addRowBtn");
-			if (addBtn) {
-				addBtn.addEventListener("click", () => {
-					const newRow = {};
-					this.csvHeaders.forEach(h => newRow[h] = "");
-
-					this.csvRows.push(newRow);
-					this.csvDirty = true;
-					this.renderCSV();
-				});
-			}
+			this.dryRunStatuses = []; // Reset dry-run statuses
 
 		},
 
-		_onCellEdit(event){
-			const cell = event.target;
-			const rowIndex = parseInt(cell.dataset.row);
-			const colName = cell.dataset.col;
+		deleteRow(rIdx) {
+			if (confirm("Are you sure you want to delete this record?")) {
+				this.csvRows.splice(rIdx, 1);
+				this.csvDirty = true;
+			}
+		},
 
-			let raw = cell.innerText;
-
-			raw = raw.replace(/"/g, '');			// Remove forbidden characters
-			raw = raw.replace(/,/g, '');			// Remove forbidden characters
-			raw = raw.replace(/\u00A0/g, ' ');		// normalize whitespace
-			raw = raw.trim();
-
-			if (cell.innerText !== raw)
-				cell.innerText = raw;
-
-			// Update the value in Vue state
-			this.csvRows[rowIndex][colName] = cell.innerText;
-
-			// Declare that the CSV has changed
-			this.csvDirty = true;
+		addRow() {
+			this.editedRowIndex = null;
+			this.editedRowData = {};
+			this.csvHeaders.forEach(h => this.editedRowData[h] = "");
+			this.rowEditorDialog = true;
 		},
 
 		delCSVTable() {
 			this.showCSV = false;
-			const box = document.getElementById("csvBox");
-			if (box) box.innerHTML = "";
+			this.dryRunStatuses = []; // Clear dry-run statuses
+			// No need to manipulate DOM directly
 		},
 
 		toggleCSV() {
@@ -1119,6 +1001,29 @@ const app = Vue.createApp ( {
 
 		},
 
+		openRowEditor(rIdx) {
+			this.editedRowIndex = rIdx;
+			this.editedRowData = { ...this.csvRows[rIdx] };
+			this.rowEditorDialog = true;
+		},
+
+		saveRowEdit() {
+			if (this.editedRowIndex === null) {
+				this.csvRows.push({ ...this.editedRowData });
+			} else {
+				this.csvRows.splice(this.editedRowIndex, 1, { ...this.editedRowData });
+			}
+			this.csvDirty = true;
+			this.rowEditorDialog = false;
+			this.editedRowIndex = null;
+		},
+
+		cancelRowEdit() {
+			this.rowEditorDialog = false;
+			this.editedRowIndex = null;
+			this.editedRowData = {};
+		},
+
 		async dryRun() {
 
 			if (!this.selectedProject || !this.selectedCsv) return;
@@ -1131,40 +1036,43 @@ const app = Vue.createApp ( {
 				return;
 			}
 			
-			const map = {};
+			// Update dry-run statuses - map by index to match csvRows
+			// Create an array indexed by row number
+			this.dryRunStatuses = [];
 			data.rows.forEach(r => {
-				map[r.row] = r;
-			});
-
-			// Add dry-run statuse column to CSV table
-			document.querySelectorAll("#csvBox table tr").forEach((tr, idx) => {
-				if (idx === 0) {
-					if (!tr.querySelector("th:last-child") || tr.querySelector("th:last-child")?.innerText !== "Status") {
-						tr.insertAdjacentHTML("beforeend", "<th>Status</th>");
-					}
-					return;
-				}
-
-				const info = map[idx];
-				if (!info) return;
-
-				let color = "#ddd";
-				if (info.status === "READY") color = "#c8e6c9";
-				if (info.status === "SKIPPED") color = "#eeeeee";
-				if (info.status === "NO_PHONE") color = "#ffcdd2";
-				if (info.status === "INVALID") color = "#ffe0b2";
-
-				const existingStatusCell = tr.querySelector("td.status-cell");
-				if (existingStatusCell) {
-					existingStatusCell.innerText = info.status;
-					existingStatusCell.style.background = color;
-				} else {
-					tr.insertAdjacentHTML(
-						"beforeend",
-						`<td class="status-cell" style="background:${color}">${info.status}</td>`
-					);
+				const idx = r.row; // r.row is the 1-based row number from server, but we need 0-based index
+				// Check if this is 1-based (table header is row 1)
+				const arrayIdx = idx - 1; // Convert to 0-based index
+				if (arrayIdx >= 0 && arrayIdx < this.csvRows.length) {
+					// Use direct assignment in Vue 3
+					this.dryRunStatuses[arrayIdx] = {
+						status: r.status,
+						color: this.getStatusColor(r.status)
+					};
 				}
 			});
+		},
+
+		getStatusColor(status) {
+			switch (status) {
+				case "READY": return "#c8e6c9";
+				case "SKIPPED": return "#eeeeee";
+				case "NO_PHONE": return "#ffcdd2";
+				case "INVALID": return "#ffe0b2";
+				default: return "#ddd";
+			}
+		},
+
+		getStatusForRow(rIdx) {
+			// rIdx is the index in csvRows array (0-based)
+			// find the status by matching the index (server returns row number starting from 1)
+			const status = this.dryRunStatuses[rIdx];
+			return status ? status.status : '';
+		},
+
+		getStatusColorForRow(rIdx) {
+			const status = this.dryRunStatuses[rIdx];
+			return status ? status.color : '#ddd';
 		},
 
 		onPanelChange(val) {

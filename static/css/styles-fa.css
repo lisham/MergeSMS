@@ -62,11 +62,26 @@ a:hover {
 }
 
 .csv-table td {
-	/* width: 1%; */
 	white-space: nowrap;
 	padding:4px 4px;
 	border-bottom:1px solid #eee;
 	vertical-align: middle;
+}
+
+.csv-cell-text {
+	display: inline-block;
+	max-width: 18ch;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	vertical-align: middle;
+}
+
+.edit-row-btn,
+.delete-row-btn {
+	margin-inline-end: 0.25rem;
+	padding: 4px 8px;
+	font-size: 0.9rem;
 }
 
 .csv-table td:focus {
@@ -77,6 +92,11 @@ a:hover {
 .csv-table tr:hover {
 	background:#f5f5f5;
 }
+
+.csv-table td input {
+	display: none;
+}
+
 
 .send-status-table-wrapper {
 	width: 100%;

@@ -919,7 +919,83 @@
 														v-show="showCSV"
 														class="mx-1"
 													>
-														<div id="csvBox" class="li-csvBox"></div>
+														<div class="csv-table-wrap">
+															<table class="project-table" v-if="csvHeaders.length > 0">
+																<thead>
+																	<tr>
+																		<th v-for="h in csvHeaders" :key="h">{{ h }}</th>
+																		<th>Action</th>
+																		<th v-if="dryRunStatuses.length > 0">Status</th>
+																	</tr>
+																</thead>
+																<tbody>
+																	<tr v-for="(row, rIdx) in csvRows" :key="rIdx">
+																		<td
+																			v-for="h in csvHeaders"
+																			:key="h"
+																		>
+																			<span class="csv-cell-text">{{ row[h] || '' }}</span>
+																		</td>
+																		<td>
+
+																			<v-btn
+																				color="orange-lighten-2"
+																				density="compact"
+																				icon
+																				class="mx-1"
+																				@click="openRowEditor(rIdx)"
+																			>
+																				<v-icon size="20">mdi-database-edit-outline</v-icon>
+																			</v-btn>
+
+																			<v-btn
+																				color="red-darken-2"
+																				density="compact"
+																				icon
+																				class="mx-1"
+																				@click="deleteRow(rIdx)"
+																			>
+																				<v-icon size="20">mdi-delete</v-icon>
+																			</v-btn>
+
+																		</td>
+																		<td v-if="dryRunStatuses.length > 0" class="status-cell" :style="{ background: getStatusColorForRow(rIdx) }">
+																			{{ getStatusForRow(rIdx) }}
+																		</td>
+																	</tr>
+																	<tr>
+																		<td :colspan="csvHeaders.length + 1 + (dryRunStatuses.length > 0 ? 1 : 0)" style="text-align:center;">
+																			<v-btn color="green" @click="addRow">
+																				<v-icon>mdi-plus</v-icon>
+																				Add Row
+																			</v-btn>
+																		</td>
+																	</tr>
+																</tbody>
+															</table>
+															<v-dialog v-model="rowEditorDialog" max-width="700">
+																<v-card>
+																	<v-card-title>{{ editedRowIndex === null ? 'Add CSV Row' : 'Edit CSV Row' }}</v-card-title>
+																	<v-card-text>
+																		<v-row v-if="rowEditorDialog">
+																			<v-col cols="12" sm="6" md="4" v-for="h in csvHeaders" :key="h">
+																				<v-text-field
+																					:label="h"
+																					v-model="editedRowData[h]"
+																					density="compact"
+																					hide-details
+																				/>
+																			</v-col>
+																		</v-row>
+																	</v-card-text>
+																	<v-card-actions>
+																			<v-spacer />
+																			<v-btn color="grey-darken-1" text @click="cancelRowEdit">Cancel</v-btn>
+																			<v-btn color="primary" text @click="saveRowEdit">Save</v-btn>
+																		</v-card-actions>
+																	</v-card>
+															</v-dialog>
+														</div>
 													</div>
 
 												</v-card-text>
