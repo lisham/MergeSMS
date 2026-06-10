@@ -3,7 +3,7 @@
 # ======================================================================
 # Version
 # ======================================================================
-VERSION = "3.7.5" # Build date: 260508 (YYMMDD)
+VERSION = "3.7.6" # Build date: 260610 (YYMMDD)
 
 import csv
 import json
@@ -54,7 +54,7 @@ def save_main_config(data: dict):
 
 
 def get_project_path(project_name: str) -> Path:
-	""" Returns the absolute path for a given project """
+	# Returns the absolute path for a given project
 	return PROJECTS_PATH / project_name
 
 
@@ -85,7 +85,7 @@ def save_project_config(project_name: str, data: dict):
 
 
 def get_phone_rules(country: str) -> dict:
-	""" Loads phone validation rules for a specific country from JSON. """
+	# Loads phone validation rules for a specific country from JSON.
 	if not PHONERULES_PATH.exists():
 		return {
 			"IR": {
@@ -272,20 +272,20 @@ def get_first_file(path, ext) -> str:
 # ======================================================================
 
 def is_send_allowed(row: dict) -> bool:
-	"""
-	Check CSV column 'send':
-	- "1", "yes", "y", "true" => allowed
-	- anything else => skip
-	"""
+
+	# Check CSV column 'send':
+	# - "1", "yes", "y", "true" => allowed
+	# - anything else => skip
+
 	val = (row.get("send", "") or "").strip().lower()
 	return val in {"1", "yes", "y", "true"}
 
 
 def render_message(template: str, row: dict) -> str:
-	"""
-	Render template using *any* CSV column.
-	Missing keys are replaced with empty string.
-	"""
+
+	# Render template using *any* CSV column.
+	# Missing keys are replaced with empty string.
+
 	class SafeDict(dict):
 		def __missing__(self, key):
 			return ""
@@ -300,10 +300,8 @@ def render_message(template: str, row: dict) -> str:
 
 def get_devices() -> dict:
 
-	"""
-	Return list of reachable devices: [(device_name, device_id), ...]
-	Parsed from kdeconnect-cli -l
-	"""
+	# Return list of reachable devices: [(device_name, device_id), ...]
+	# Parsed from kdeconnect-cli -l
 
 	result = subprocess.run(
 		["kdeconnect-cli", "-l"],
@@ -333,10 +331,10 @@ def get_devices() -> dict:
 
 
 def send_sms(device_name, phone, message):
-	"""
-	Send SMS using kdeconnect-cli by DEVICE NAME (not device id).
-	Example: kdeconnect-cli -n SM-A305F --destination +1... --send-sms "..."
-	"""
+
+	# Send SMS using kdeconnect-cli by DEVICE NAME (not device id).
+	# Example: kdeconnect-cli -n SM-A305F --destination +1... --send-sms "..."
+	
 	cmd = [
 		"kdeconnect-cli",
 		"-n", device_name,

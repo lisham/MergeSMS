@@ -7,7 +7,7 @@ This project allows you to manage SMS campaigns via CSV lists, create customizab
 ## ✨ Features
 
 - **Project Management:** Organize CSV contacts and text templates into dedicated folders.
-- **CSV Support:** Automatically parse contacts and dynamic fields.
+- **CSV Support:** Automatically parse contacts and dynamic fields (includes sortable columns, manual row reordering, and edit/delete row actions)
 - **Dynamic Templating:** Personalize messages per recipient using `{firstname}`, `{lastname}`, etc.
 - **Local SMS Routing:** Sends SMS directly from your paired Android phone via `kdeconnect-cli`.
 - **Dry-run Mode:** Safely test your templates and CSV mapping without sending actual SMS.

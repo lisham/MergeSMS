@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.7.6] - 2026-06-10
+### Added
+- Added sortable CSV column headers with ascending/descending toggle.
+- Added manual row reordering controls to move CSV records up and down.
+
 ## [3.7.5] - 2026-05-08
 ### Added
 - Added a row editor dialog for CSV table rows so users can edit row data in a modal form.

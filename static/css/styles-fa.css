@@ -190,6 +190,16 @@ a:hover {
 	font-weight:600;
 }
 
+.sortable-header {
+	cursor: pointer;
+	user-select: none;
+}
+
+.sortable-header .sort-icon {
+	margin-left: 1px;
+	vertical-align: middle;
+}
+
 .project-table td {
 	/* padding:8px 10px; */
 	padding: 1px 1px;

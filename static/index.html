@@ -69,6 +69,7 @@
 							>
 							<v-locale-provider ltr>
 
+								<!-- Toast Snackbar -->
 								<v-snackbar
 									v-model="toastVisible"
 									color="black"
@@ -79,6 +80,7 @@
 									<div v-html="toast"></div>
 								</v-snackbar>
 
+								<!-- Send Completed Dialog -->
 								<v-dialog
 									v-model="sendCompletedDialog"
 									max-width="400"
@@ -102,6 +104,7 @@
 									</v-card>
 								</v-dialog>
 
+								<!-- Delete Project Dialog -->
 								<v-dialog
 									v-model="delProjDialog"
 									max-width="400"
@@ -143,6 +146,7 @@
 									</v-card>
 								</v-dialog>
 
+								<!-- Delete Template Dialog -->
 								<v-dialog
 									v-model="delTXTDialog"
 									max-width="400"
@@ -184,6 +188,7 @@
 									</v-card>
 								</v-dialog>
 
+								<!-- Delete CSV Dialog -->
 								<v-dialog
 									v-model="delCSVDialog"
 									max-width="400"
@@ -385,7 +390,6 @@
 
 									</v-expansion-panel>
 								</v-expansion-panels>
-
 
 								<!-- Templates (TXT-Files) Managment / Manager -->
 								<v-expansion-panels>
@@ -737,11 +741,12 @@
 														@change="uploadCsv"
 													></v-file-input>
 
-													<!-- CSV Files List -->
+													<!-- CSV Files Table | No Files -->
 													<div v-if="csvFiles.length === 0" class="no-file-message">
 														No CSV files found for this project.
 													</div>
 
+													<!-- CSV Files Table | With Files -->
 													<table v-else class="project-table">
 
 														<tr>
@@ -850,6 +855,7 @@
 													<!-- BTN Toolbar | Show & Edit CSV content | Show/Hide Table | Edit cells | Dry-Run -->
 													<v-toolbar color="transparent" height="auto" class="ma-0 pa-0">
 
+														<!-- BTN | Show/Hide CSV Table -->
 														<v-btn
 															:disabled="csvButtonDisabled"
 															:color="showCSV ? 'orange-darken-3' : 'blue-darken-4'"
@@ -891,7 +897,6 @@
 															<v-icon size="18">mdi-close</v-icon>
 														</v-btn>
 
-
 														<!-- BTN | Dry-Run -->
 														<v-tooltip text="Dry-Run" location="bottom">
 															<template v-slot:activator="{ props }">
@@ -920,16 +925,31 @@
 														class="mx-1"
 													>
 														<div class="csv-table-wrap">
+
+															<!-- CSV Content Table -->
 															<table class="project-table" v-if="csvHeaders.length > 0">
 																<thead>
 																	<tr>
-																		<th v-for="h in csvHeaders" :key="h">{{ h }}</th>
+																		<th
+																			v-for="h in csvHeaders"
+																			:key="h"
+																			class="sortable-header"
+																			@click="sortByHeader(h)"
+																		>
+																			<span>{{ h }}</span>
+																			<v-icon
+																				small
+																				class="sort-icon"
+																			>
+																				{{ sortBy === h ? (sortDesc ? 'mdi-arrow-down' : 'mdi-arrow-up') : 'mdi-swap-vertical' }}
+																			</v-icon>
+																		</th>
 																		<th>Action</th>
 																		<th v-if="dryRunStatuses.length > 0">Status</th>
 																	</tr>
 																</thead>
 																<tbody>
-																	<tr v-for="(row, rIdx) in csvRows" :key="rIdx">
+																	<tr v-for="(row, rIdx) in sortedCsvRows" :key="getRowIndex(row)">
 																		<td
 																			v-for="h in csvHeaders"
 																			:key="h"
@@ -938,34 +958,66 @@
 																		</td>
 																		<td>
 
-																			<v-btn
-																				color="orange-lighten-2"
-																				density="compact"
-																				icon
-																				class="mx-1"
-																				@click="openRowEditor(rIdx)"
-																			>
-																				<v-icon size="20">mdi-database-edit-outline</v-icon>
-																			</v-btn>
+									<!-- BTN | Move Up -->
+									<v-btn
+										color="blue-grey"
+										density="compact"
+										icon
+										class="mx-1"
+										@click="moveRowUp(row)"
+										:disabled="getDisplayIndex(row) === 0"
+									>
+										<v-icon size="20">mdi-arrow-up-bold</v-icon>
+									</v-btn>
 
-																			<v-btn
-																				color="red-darken-2"
-																				density="compact"
-																				icon
-																				class="mx-1"
-																				@click="deleteRow(rIdx)"
-																			>
-																				<v-icon size="20">mdi-delete</v-icon>
-																			</v-btn>
+									<!-- BTN | Move Down -->
+									<v-btn
+										color="blue-grey"
+										density="compact"
+										icon
+										class="mx-1"
+										@click="moveRowDown(row)"
+										:disabled="getDisplayIndex(row) === sortedCsvRows.length - 1"
+									>
+										<v-icon size="20">mdi-arrow-down-bold</v-icon>
+									</v-btn>
+
+													<!-- BTN | Edit Row -->
+													<v-btn
+														color="orange-lighten-2"
+														density="compact"
+														icon
+														class="mx-1"
+														@click="openRowEditor(row)"
+													>
+														<v-icon size="20">mdi-database-edit-outline</v-icon>
+													</v-btn>
+
+													<!-- BTN | Delete Row -->
+													<v-btn
+														color="red-darken-2"
+														density="compact"
+														icon
+														class="mx-1"
+														@click="deleteRow(row)"
+													>
+														<v-icon size="20">mdi-delete</v-icon>
+													</v-btn>
 
 																		</td>
-																		<td v-if="dryRunStatuses.length > 0" class="status-cell" :style="{ background: getStatusColorForRow(rIdx) }">
-																			{{ getStatusForRow(rIdx) }}
+																		<td v-if="dryRunStatuses.length > 0" class="status-cell" :style="{ background: getStatusColorForRow(row) }">
+																			{{ getStatusForRow(row) }}
 																		</td>
 																	</tr>
 																	<tr>
 																		<td :colspan="csvHeaders.length + 1 + (dryRunStatuses.length > 0 ? 1 : 0)" style="text-align:center;">
-																			<v-btn color="green" @click="addRow">
+																			<!-- BTN | Add Row -->
+																			<v-btn
+																				color="green"
+																				@click="addRow"
+																				density="compact"
+																				variant="elevated"
+																			>
 																				<v-icon>mdi-plus</v-icon>
 																				Add Row
 																			</v-btn>
@@ -973,6 +1025,8 @@
 																	</tr>
 																</tbody>
 															</table>
+
+															<!-- Row Editor Dialog -->
 															<v-dialog v-model="rowEditorDialog" max-width="700">
 																<v-card>
 																	<v-card-title>{{ editedRowIndex === null ? 'Add CSV Row' : 'Edit CSV Row' }}</v-card-title>
@@ -989,9 +1043,27 @@
 																		</v-row>
 																	</v-card-text>
 																	<v-card-actions>
-																			<v-spacer />
-																			<v-btn color="grey-darken-1" text @click="cancelRowEdit">Cancel</v-btn>
-																			<v-btn color="primary" text @click="saveRowEdit">Save</v-btn>
+																			<v-spacer></v-spacer>
+																			<v-btn
+																				color="red-darken-1"
+																				density="compact"
+																				icon
+																				variant="elevated"
+																				class="mx-1"
+																				@click="saveRowEdit"
+																			>
+																				<v-icon size="18">mdi-check</v-icon>
+																			</v-btn>
+																			<v-btn
+																				color="grey-darken-1"
+																				density="compact"
+																				icon
+																				variant="elevated"
+																				class="mx-1"
+																				@click="cancelRowEdit"
+																			>
+																				<v-icon size="18">mdi-close</v-icon>
+																			</v-btn>
 																		</v-card-actions>
 																	</v-card>
 															</v-dialog>

@@ -74,6 +74,8 @@ const app = Vue.createApp ( {
 			
 			csvHeaders: [],
 			csvRows: [],
+			sortBy: null,
+			sortDesc: false,
 			csvLoaded: false,
 
 			dryRunStatuses: [],
@@ -196,6 +198,32 @@ const app = Vue.createApp ( {
 			}
 			return this.csvRows;
 		},
+
+		sortedCsvRows() {
+			if (!this.sortBy) {
+				return this.csvRows;
+			}
+
+			const key = this.sortBy;
+			return [...this.csvRows].sort((a, b) => {
+				const aVal = a[key] ?? '';
+				const bVal = b[key] ?? '';
+
+				const aNum = parseFloat(aVal);
+				const bNum = parseFloat(bVal);
+
+				if (!Number.isNaN(aNum) && !Number.isNaN(bNum) && aVal.toString().trim() !== '' && bVal.toString().trim() !== '') {
+					return this.sortDesc ? (bNum - aNum) : (aNum - bNum);
+				}
+
+				const aStr = aVal.toString().toLowerCase();
+				const bStr = bVal.toString().toLowerCase();
+
+				if (aStr < bStr) return this.sortDesc ? 1 : -1;
+				if (aStr > bStr) return this.sortDesc ? -1 : 1;
+				return 0;
+			});
+		},
 	
 	} ,
 
@@ -245,6 +273,7 @@ const app = Vue.createApp ( {
 
 		},
 
+		// Update the country for the current project on the server, then update the activeCountry and the value in the projects list
 		async setCountry(){
 
 			await fetch("/api/project-settings",{
@@ -284,13 +313,11 @@ const app = Vue.createApp ( {
 
 		},
 
-		// Open the confirmation dialog
 		openDelProjDialog(name) {
 			this.projToDelete = name;
 			this.delProjDialog = true;
 		},
 
-		// Execute project deletion
 		async deleteProject() {
 
 			const name = this.projToDelete;
@@ -364,6 +391,7 @@ const app = Vue.createApp ( {
 			}
 		},
 
+		// Update the country for the current project on the server, then update the activeCountry and the value in the projects list
 		async updateProjectCountry(projectName, country) {
 			try {
 				const res = await fetch(`/api/projects/${projectName}/country`, {
@@ -425,6 +453,7 @@ const app = Vue.createApp ( {
 
 		},
 
+		// Toggle the editor direction between RTL and LTR, then save the new direction to the server
 		async setEditorRTL(){
 
 			await fetch("/api/project-settings",{
@@ -455,12 +484,12 @@ const app = Vue.createApp ( {
 
 		},
 
-		// Open the confirmation dialog
 		openDelTXTDialog(name) {
 			this.txtToDelete = name;
 			this.delTXTDialog = true;
 		},
 
+		// Delete a TXT file for the current project: send the delete request to the server, then reload the list of TXT files to update the table
 		async deleteTXT(){
 
 			const name = this.txtToDelete;
@@ -470,7 +499,6 @@ const app = Vue.createApp ( {
 				method:"DELETE"
 			})
 
-			// Close the dialog and clear the selected template file
 			this.delTXTDialog = false;
 			this.txtToDelete = null;
 
@@ -578,6 +606,7 @@ const app = Vue.createApp ( {
 
 		},
 
+		// Toggle the editor direction between RTL and LTR, then save the new direction to the server
 		async toggleEditorDirection() {
 			this.editorIsRTL = !this.editorIsRTL;
 			await this.setEditorRTL();
@@ -617,7 +646,7 @@ const app = Vue.createApp ( {
 		},
 
 		insertField(fieldName) {
-			// Find the actual textarea
+			// Find textarea and insert field at cursor position
 			const textarea = this.$refs.editor?.$el?.querySelector("textarea");
 			if (!textarea) return;
 
@@ -648,8 +677,6 @@ const app = Vue.createApp ( {
 
 		buildPreviewText() {
 			if (!this.message) return;
-
-			// CSV empty check: simple linebreaks only
 			if (!this.previewRows.length) {
 				this.previewText = this.message.replace(/\n/g, '<br>');
 				this.countPreviewChars();
@@ -667,7 +694,6 @@ const app = Vue.createApp ( {
 
 			const csvKeys = Object.keys(row);
 
-			// Replace fields in the CSV
 			for (const key of csvKeys) {
 				const val = row[key] ?? '';
 				const re = new RegExp(`\\{${key}\\}`, 'g');
@@ -678,7 +704,6 @@ const app = Vue.createApp ( {
 				}
 			}
 
-			// Highlight missing fields
 			const missingRegex = /\{([^}]+)\}/g;
 			txt = txt.replace(missingRegex, (match, fieldName) => {
 				if (!csvKeys.includes(fieldName)) {
@@ -687,10 +712,7 @@ const app = Vue.createApp ( {
 				return match;
 			});
 
-			// Convert newline to <br>
 			this.previewText = txt.replace(/\n/g, '<br>');
-			
-			// Count characters in preview without HTML tags
 			this.countPreviewChars();
 		},
 
@@ -768,7 +790,6 @@ const app = Vue.createApp ( {
 
 			this.csvFiles = data.files
 
-			// If selectedCsv is not set or doesn't exist → select the first file
 			if(this.csvFiles.length > 0){
 				if(!this.selectedCsv || !this.csvFiles.includes(this.selectedCsv)){
 					await this.setCsv(this.csvFiles[0]);
@@ -813,7 +834,6 @@ const app = Vue.createApp ( {
 
 		},
 
-		// Open the confirmation dialog
 		openDelCSVDialog(name) {
 			this.csvToDelete = name;
 			this.delCSVDialog = true;
@@ -828,7 +848,6 @@ const app = Vue.createApp ( {
 				method:"DELETE"
 			})
 
-			// Close the dialog and clear the selected csv file
 			this.delCSVDialog = false;
 			this.csvToDelete = null;
 
@@ -919,12 +938,16 @@ const app = Vue.createApp ( {
 
 			this.csvHeaders = data.headers || [];
 			this.csvRows = data.rows || [];
+			this.sortBy = null;
+			this.sortDesc = false;
 			this.csvLoaded = true;
 			this.dryRunStatuses = []; // Reset dry-run statuses
 
 		},
 
-		deleteRow(rIdx) {
+		deleteRow(row) {
+			const rIdx = this.getRowIndex(row);
+			if (rIdx < 0) return;
 			if (confirm("Are you sure you want to delete this record?")) {
 				this.csvRows.splice(rIdx, 1);
 				this.csvDirty = true;
@@ -940,8 +963,7 @@ const app = Vue.createApp ( {
 
 		delCSVTable() {
 			this.showCSV = false;
-			this.dryRunStatuses = []; // Clear dry-run statuses
-			// No need to manipulate DOM directly
+			this.dryRunStatuses = [];
 		},
 
 		toggleCSV() {
@@ -988,23 +1010,77 @@ const app = Vue.createApp ( {
 
 			if (!this.selectedProject || !this.selectedCsv) return;
 
+			const rowsToSave = this.sortBy ? this.sortedCsvRows : this.csvRows;
+
 			const res = await fetch(`/api/projects/${this.selectedProject}/csv/${this.selectedCsv}`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
 					headers: this.csvHeaders,
-					rows: this.csvRows,
+					rows: rowsToSave,
 				}),
 			});
 
 			const data = await res.json();
 
+			if (this.sortBy) {
+				this.csvRows = rowsToSave;
+			}
+
 		},
 
-		openRowEditor(rIdx) {
+		getRowIndex(row) {
+			return this.csvRows.indexOf(row);
+		},
+
+		openRowEditor(row) {
+			const rIdx = this.getRowIndex(row);
+			if (rIdx < 0) return;
 			this.editedRowIndex = rIdx;
 			this.editedRowData = { ...this.csvRows[rIdx] };
 			this.rowEditorDialog = true;
+		},
+
+		getDisplayIndex(row) {
+			return this.sortedCsvRows.indexOf(row);
+		},
+
+		moveRowUp(row) {
+			if (this.sortBy) {
+				this.csvRows = this.sortedCsvRows;
+				this.sortBy = null;
+				this.sortDesc = false;
+			}
+			const rIdx = this.getRowIndex(row);
+			if (rIdx > 0) {
+				const temp = this.csvRows[rIdx - 1];
+				this.csvRows.splice(rIdx - 1, 2, this.csvRows[rIdx], temp);
+				this.csvDirty = true;
+			}
+		},
+
+		moveRowDown(row) {
+			if (this.sortBy) {
+				this.csvRows = this.sortedCsvRows;
+				this.sortBy = null;
+				this.sortDesc = false;
+			}
+			const rIdx = this.getRowIndex(row);
+			if (rIdx >= 0 && rIdx < this.csvRows.length - 1) {
+				const temp = this.csvRows[rIdx + 1];
+				this.csvRows.splice(rIdx, 2, temp, this.csvRows[rIdx]);
+				this.csvDirty = true;
+			}
+		},
+
+		sortByHeader(header) {
+			if (this.sortBy === header) {
+				this.sortDesc = !this.sortDesc;
+			} else {
+				this.sortBy = header;
+				this.sortDesc = false;
+			}
+			this.csvDirty = true;
 		},
 
 		saveRowEdit() {
@@ -1036,8 +1112,7 @@ const app = Vue.createApp ( {
 				return;
 			}
 			
-			// Update dry-run statuses - map by index to match csvRows
-			// Create an array indexed by row number
+			// Map dry-run results by CSV row index
 			this.dryRunStatuses = [];
 			data.rows.forEach(r => {
 				const idx = r.row; // r.row is the 1-based row number from server, but we need 0-based index
@@ -1063,14 +1138,14 @@ const app = Vue.createApp ( {
 			}
 		},
 
-		getStatusForRow(rIdx) {
-			// rIdx is the index in csvRows array (0-based)
-			// find the status by matching the index (server returns row number starting from 1)
+		getStatusForRow(row) {
+			const rIdx = this.getRowIndex(row);
 			const status = this.dryRunStatuses[rIdx];
 			return status ? status.status : '';
 		},
 
-		getStatusColorForRow(rIdx) {
+		getStatusColorForRow(row) {
+			const rIdx = this.getRowIndex(row);
 			const status = this.dryRunStatuses[rIdx];
 			return status ? status.color : '#ddd';
 		},
