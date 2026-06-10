@@ -17,7 +17,7 @@ This project allows you to manage SMS campaigns via CSV lists, create customizab
 ## 💻 Tech Stack
 
 - **Backend:** Python, Flask
-- **Frontend:** HTML/CSS, Vanilla JS, Vue 3, Vuetify, Axios
+- **Frontend:** HTML/CSS, Vue 3, Vuetify, Axios
 - **Architecture:** SPA (Single Page Application)
 
 ## 📋 Prerequisites
