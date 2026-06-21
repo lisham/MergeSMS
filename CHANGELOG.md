@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.7.8] - 2026-06-21
+### Added
+- Added a contextual row action menu to keep CSV row actions compact in wide tables.
+
+## [3.7.7] - 2026-06-16
+### Added
+- Added CSV column move controls to shift headers left and right from the new action row.
+- Added CSV column creation from the CSV table toolbar.
+- Added per-column delete controls in the CSV table header.
+
 ## [3.7.6] - 2026-06-10
 ### Added
 - Added sortable CSV column headers with ascending/descending toggle.

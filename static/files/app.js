@@ -60,6 +60,9 @@ const app = Vue.createApp ( {
 			rowEditorDialog: false,
 			editedRowIndex: null,
 			editedRowData: {},
+			activeRowActionRow: null,
+			activeHeaderActionHeader: null,
+			activeRowActionEventBound: false,
 			
 			delCSVDialog: false,
 			csvToDelete: null,
@@ -74,6 +77,8 @@ const app = Vue.createApp ( {
 			
 			csvHeaders: [],
 			csvRows: [],
+			columnDialog: false,
+			newColumnName: '',
 			sortBy: null,
 			sortDesc: false,
 			csvLoaded: false,
@@ -829,6 +834,7 @@ const app = Vue.createApp ( {
 				method:"POST",
 				body:fd
 			})
+			this.closeAllActionPanels();
 
 			this.loadCsvFiles()
 
@@ -938,6 +944,9 @@ const app = Vue.createApp ( {
 
 			this.csvHeaders = data.headers || [];
 			this.csvRows = data.rows || [];
+			this.activeRowActionRow = null;
+			this.columnDialog = false;
+			this.newColumnName = '';
 			this.sortBy = null;
 			this.sortDesc = false;
 			this.csvLoaded = true;
@@ -952,6 +961,75 @@ const app = Vue.createApp ( {
 				this.csvRows.splice(rIdx, 1);
 				this.csvDirty = true;
 			}
+			if (this.activeRowActionRow === row) {
+				this.activeRowActionRow = null;
+			}
+		},
+
+		isProtectedCsvHeader(header) {
+			return ['send', 'mob'].includes((header || '').trim().toLowerCase());
+		},
+
+		openAddColumnDialog() {
+			this.newColumnName = '';
+			this.columnDialog = true;
+		},
+
+		cancelAddColumn() {
+			this.columnDialog = false;
+			this.newColumnName = '';
+		},
+
+		confirmAddColumn() {
+			const columnName = this.newColumnName.trim();
+			if (!columnName) {
+				alert('Please enter a column name.');
+				return;
+			}
+
+			if (this.csvHeaders.some(header => header.trim() === columnName)) {
+				alert('This column already exists.');
+				return;
+			}
+
+			this.csvHeaders.push(columnName);
+			this.csvRows = this.csvRows.map(row => ({
+				...row,
+				[columnName]: '',
+			}));
+			this.csvDirty = true;
+			this.cancelAddColumn();
+		},
+
+		deleteColumn(header) {
+			if (this.isProtectedCsvHeader(header)) {
+				alert('The send and mob columns cannot be deleted.');
+				return;
+			}
+
+			if (!this.csvHeaders.includes(header)) return;
+
+			if (!confirm(`Are you sure you want to delete the column "${header}"?`)) {
+				return;
+			}
+
+			this.csvHeaders = this.csvHeaders.filter(item => item !== header);
+			this.csvRows = this.csvRows.map(row => {
+				const nextRow = { ...row };
+				delete nextRow[header];
+				return nextRow;
+			});
+
+			if (this.sortBy === header) {
+				this.sortBy = null;
+				this.sortDesc = false;
+			}
+
+			if (this.activeHeaderActionHeader === header) {
+				this.activeHeaderActionHeader = null;
+			}
+
+			this.csvDirty = true;
 		},
 
 		addRow() {
@@ -964,6 +1042,7 @@ const app = Vue.createApp ( {
 		delCSVTable() {
 			this.showCSV = false;
 			this.dryRunStatuses = [];
+			this.closeAllActionPanels();
 		},
 
 		toggleCSV() {
@@ -974,6 +1053,7 @@ const app = Vue.createApp ( {
 				this.loadCSV();
 			} else {
 				this.showCSV = false;
+				this.closeAllActionPanels();
 			}
 		},
 
@@ -1039,10 +1119,86 @@ const app = Vue.createApp ( {
 			this.editedRowIndex = rIdx;
 			this.editedRowData = { ...this.csvRows[rIdx] };
 			this.rowEditorDialog = true;
+			this.activeRowActionRow = null;
+			this.activeHeaderActionHeader = null;
+		},
+
+		openRowActions(row) {
+			if (this.activeRowActionRow === row) {
+				this.closeRowActions();
+				return;
+			}
+
+			this.activeHeaderActionHeader = null;
+			this.activeRowActionRow = row;
+		},
+
+		closeRowActions() {
+			this.activeRowActionRow = null;
+		},
+
+		openHeaderActions(header) {
+			if (this.activeHeaderActionHeader === header) {
+				this.closeHeaderActions();
+				return;
+			}
+
+			this.activeRowActionRow = null;
+			this.activeHeaderActionHeader = header;
+		},
+
+		closeHeaderActions() {
+			this.activeHeaderActionHeader = null;
+		},
+
+		closeAllActionPanels() {
+			this.activeRowActionRow = null;
+			this.activeHeaderActionHeader = null;
+		},
+
+		onDocumentMouseDown(event) {
+			if (!this.activeRowActionRow && !this.activeHeaderActionHeader) return;
+
+			const target = event.target;
+			if (!(target instanceof Element)) return;
+
+			if (target.closest('.row-action-host') || target.closest('.csv-header-action-host')) return;
+			this.closeAllActionPanels();
+		},
+
+		onDocumentKeyDown(event) {
+			if (!this.activeRowActionRow && !this.activeHeaderActionHeader) return;
+			if (event.key === 'Escape' || event.key === 'Esc') {
+				this.closeAllActionPanels();
+			}
 		},
 
 		getDisplayIndex(row) {
 			return this.sortedCsvRows.indexOf(row);
+		},
+
+		getHeaderIndex(header) {
+			return this.csvHeaders.indexOf(header);
+		},
+
+		moveColumnLeft(header) {
+			const currentIndex = this.getHeaderIndex(header);
+			if (currentIndex <= 0) return;
+
+			const nextHeaders = [...this.csvHeaders];
+			[nextHeaders[currentIndex - 1], nextHeaders[currentIndex]] = [nextHeaders[currentIndex], nextHeaders[currentIndex - 1]];
+			this.csvHeaders = nextHeaders;
+			this.csvDirty = true;
+		},
+
+		moveColumnRight(header) {
+			const currentIndex = this.getHeaderIndex(header);
+			if (currentIndex < 0 || currentIndex >= this.csvHeaders.length - 1) return;
+
+			const nextHeaders = [...this.csvHeaders];
+			[nextHeaders[currentIndex], nextHeaders[currentIndex + 1]] = [nextHeaders[currentIndex + 1], nextHeaders[currentIndex]];
+			this.csvHeaders = nextHeaders;
+			this.csvDirty = true;
 		},
 
 		moveRowUp(row) {
@@ -1098,6 +1254,7 @@ const app = Vue.createApp ( {
 			this.rowEditorDialog = false;
 			this.editedRowIndex = null;
 			this.editedRowData = {};
+			this.closeAllActionPanels();
 		},
 
 		async dryRun() {
@@ -1474,10 +1631,19 @@ const app = Vue.createApp ( {
 
 		console.log("Veujs version:", document.querySelector('#app').__vue_app__.version);
 		console.log("Vuetify version:", Vuetify.version);
+
+		document.addEventListener('mousedown', this.onDocumentMouseDown);
+		document.addEventListener('keydown', this.onDocumentKeyDown);
+		this.activeRowActionEventBound = true;
 	} ,
 
 	beforeUnmount() {
 		this.stopPollingSendStatus();
+		if (this.activeRowActionEventBound) {
+			document.removeEventListener('mousedown', this.onDocumentMouseDown);
+			document.removeEventListener('keydown', this.onDocumentKeyDown);
+			this.activeRowActionEventBound = false;
+		}
 	} ,
 
 } )

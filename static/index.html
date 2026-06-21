@@ -917,6 +917,19 @@
 															</template>
 														</v-tooltip>
 
+														<!-- BTN | Add Column -->
+														<v-btn
+															v-if="showCSV"
+															color="teal-darken-1"
+															density="compact"
+															icon
+															variant="elevated"
+															class="mx-1"
+															@click="openAddColumnDialog"
+														>
+															<v-icon size="18">mdi-table-column-plus-after</v-icon>
+														</v-btn>
+
 													</v-toolbar>
 
 													<!-- CSV Content Table -->
@@ -929,23 +942,79 @@
 															<!-- CSV Content Table -->
 															<table class="project-table" v-if="csvHeaders.length > 0">
 																<thead>
-																	<tr>
+																	<tr class="csv-header-title-row">
+																		<th v-for="h in csvHeaders" :key="`${h}-title`">{{ h }}</th>
+																		<th rowspan="2"></th>
+																		<th v-if="dryRunStatuses.length > 0" rowspan="2">Status</th>
+																	</tr>
+																	<tr class="csv-header-actions-row">
 																		<th
 																			v-for="h in csvHeaders"
-																			:key="h"
-																			class="sortable-header"
-																			@click="sortByHeader(h)"
+																			:key="`${h}-actions`"
+																			class="csv-header-actions-cell"
 																		>
-																			<span>{{ h }}</span>
-																			<v-icon
-																				small
-																				class="sort-icon"
-																			>
-																				{{ sortBy === h ? (sortDesc ? 'mdi-arrow-down' : 'mdi-arrow-up') : 'mdi-swap-vertical' }}
-																			</v-icon>
+																			<div class="csv-header-action-host">
+																				<v-btn
+																					icon
+																					density="compact"
+																					variant="text"
+																					color="blue-grey-darken-1"
+																					class="csv-header-action-trigger"
+																					@click.stop="openHeaderActions(h)"
+																				>
+																					<v-icon size="18">mdi-dots-horizontal</v-icon>
+																				</v-btn>
+
+																				<div v-if="activeHeaderActionHeader === h" class="csv-header-popover" @click.stop>
+																					<v-btn
+																						icon
+																						density="compact"
+																						variant="elevated"
+																						color="blue-grey"
+																						class="csv-header-popover-btn"
+																						@click="sortByHeader(h)"
+																					>
+																						<v-icon size="16">{{ sortBy === h ? (sortDesc ? 'mdi-arrow-down' : 'mdi-arrow-up') : 'mdi-swap-vertical' }}</v-icon>
+																					</v-btn>
+
+																					<v-btn
+																						icon
+																						density="compact"
+																						variant="elevated"
+																						color="blue-grey"
+																						class="csv-header-popover-btn"
+																						@click="moveColumnLeft(h)"
+																						:disabled="getHeaderIndex(h) === 0"
+																					>
+																						<v-icon size="16">mdi-arrow-left-bold</v-icon>
+																					</v-btn>
+
+																					<v-btn
+																						icon
+																						density="compact"
+																						variant="elevated"
+																						color="blue-grey"
+																						class="csv-header-popover-btn"
+																						@click="moveColumnRight(h)"
+																						:disabled="getHeaderIndex(h) === csvHeaders.length - 1"
+																					>
+																						<v-icon size="16">mdi-arrow-right-bold</v-icon>
+																					</v-btn>
+
+																					<v-btn
+																						v-if="!isProtectedCsvHeader(h)"
+																						icon
+																						density="compact"
+																						variant="elevated"
+																						color="red-darken-2"
+																						class="csv-header-popover-btn"
+																						@click="deleteColumn(h)"
+																					>
+																						<v-icon size="16">mdi-trash-can-outline</v-icon>
+																					</v-btn>
+																				</div>
+																			</div>
 																		</th>
-																		<th>Action</th>
-																		<th v-if="dryRunStatuses.length > 0">Status</th>
 																	</tr>
 																</thead>
 																<tbody>
@@ -956,54 +1025,71 @@
 																		>
 																			<span class="csv-cell-text">{{ row[h] || '' }}</span>
 																		</td>
-																		<td>
+																		<td class="csv-row-action-cell">
+																			<div class="row-action-host">
+																				<v-btn
+																					icon
+																					density="compact"
+																					variant="text"
+																					color="blue-grey-darken-1"
+																					class="mx-1 row-action-trigger"
+																					@click.stop="openRowActions(row)"
+																				>
+																					<v-icon size="18">mdi-dots-horizontal</v-icon>
+																				</v-btn>
 
-									<!-- BTN | Move Up -->
-									<v-btn
-										color="blue-grey"
-										density="compact"
-										icon
-										class="mx-1"
-										@click="moveRowUp(row)"
-										:disabled="getDisplayIndex(row) === 0"
-									>
-										<v-icon size="20">mdi-arrow-up-bold</v-icon>
-									</v-btn>
+																				<div
+																					v-if="activeRowActionRow === row"
+																					class="row-action-popover"
+																					@click.stop
+																				>
+																					<v-btn
+																						icon
+																						color="blue-grey"
+																						density="compact"
+																						variant="elevated"
+																						class="row-action-popover-btn"
+																						@click="moveRowUp(row)"
+																						:disabled="getDisplayIndex(row) === 0"
+																					>
+																						<v-icon size="16">mdi-arrow-up-bold</v-icon>
+																					</v-btn>
 
-									<!-- BTN | Move Down -->
-									<v-btn
-										color="blue-grey"
-										density="compact"
-										icon
-										class="mx-1"
-										@click="moveRowDown(row)"
-										:disabled="getDisplayIndex(row) === sortedCsvRows.length - 1"
-									>
-										<v-icon size="20">mdi-arrow-down-bold</v-icon>
-									</v-btn>
+																					<v-btn
+																						icon
+																						color="blue-grey"
+																						density="compact"
+																						variant="elevated"
+																						class="row-action-popover-btn"
+																						@click="moveRowDown(row)"
+																						:disabled="getDisplayIndex(row) === sortedCsvRows.length - 1"
+																					>
+																						<v-icon size="16">mdi-arrow-down-bold</v-icon>
+																					</v-btn>
 
-													<!-- BTN | Edit Row -->
-													<v-btn
-														color="orange-lighten-2"
-														density="compact"
-														icon
-														class="mx-1"
-														@click="openRowEditor(row)"
-													>
-														<v-icon size="20">mdi-database-edit-outline</v-icon>
-													</v-btn>
+																					<v-btn
+																						icon
+																						color="orange-lighten-2"
+																						density="compact"
+																						variant="elevated"
+																						class="row-action-popover-btn"
+																						@click="openRowEditor(row)"
+																					>
+																						<v-icon size="16">mdi-database-edit-outline</v-icon>
+																					</v-btn>
 
-													<!-- BTN | Delete Row -->
-													<v-btn
-														color="red-darken-2"
-														density="compact"
-														icon
-														class="mx-1"
-														@click="deleteRow(row)"
-													>
-														<v-icon size="20">mdi-delete</v-icon>
-													</v-btn>
-
+																					<v-btn
+																						icon
+																						color="red-darken-2"
+																						density="compact"
+																						variant="elevated"
+																						class="row-action-popover-btn"
+																						@click="deleteRow(row)"
+																					>
+																						<v-icon size="16">mdi-delete</v-icon>
+																					</v-btn>
+																				</div>
+																			</div>
 																		</td>
 																		<td v-if="dryRunStatuses.length > 0" class="status-cell" :style="{ background: getStatusColorForRow(row) }">
 																			{{ getStatusForRow(row) }}
@@ -1067,6 +1153,45 @@
 																		</v-card-actions>
 																	</v-card>
 															</v-dialog>
+
+																<!-- Add Column Dialog -->
+																<v-dialog v-model="columnDialog" max-width="420">
+																	<v-card>
+																		<v-card-title>Add CSV Column</v-card-title>
+																		<v-card-text>
+																			<v-text-field
+																				v-model="newColumnName"
+																				label="Column name"
+																				density="compact"
+																				hide-details
+																				@keyup.enter="confirmAddColumn"
+																			/>
+																		</v-card-text>
+																		<v-card-actions>
+																			<v-spacer></v-spacer>
+																			<v-btn
+																				color="green-darken-1"
+																				density="compact"
+																				icon
+																				variant="elevated"
+																				class="mx-1"
+																				@click="confirmAddColumn"
+																			>
+																				<v-icon size="18">mdi-check</v-icon>
+																			</v-btn>
+																			<v-btn
+																				color="grey-darken-1"
+																				density="compact"
+																				icon
+																				variant="elevated"
+																				class="mx-1"
+																				@click="cancelAddColumn"
+																			>
+																				<v-icon size="18">mdi-close</v-icon>
+																			</v-btn>
+																		</v-card-actions>
+																	</v-card>
+																</v-dialog>
 														</div>
 													</div>
 
